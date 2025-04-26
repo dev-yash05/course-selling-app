@@ -1,4 +1,5 @@
 const{ Router } = require('express');
+const { ObjectId } = require('mongoose');
 const adminRouter = Router();
 const {adminModel, courseModel} = require('../db');
 const jwt = require('jsonwebtoken');
@@ -60,14 +61,14 @@ const{ email, password } = req.body;
     }
 
 });
-adminRouter.post('/course', adminMiddleware,async (req,res) =>{
+adminRouter.post('/course', adminMiddleware ,async (req,res) =>{
     const adminId = req.userId;
-    const{ title, description, ImageUrl, price } = req.body;
+    const{ title, description, imageUrl, price } = req.body;
 
     const course = await courseModel.create({
         title: title,
         description: description,
-        imageUrl: ImageUrl,
+        imageUrl: imageUrl,
         price: price,
         creatorId: adminId
     })
@@ -76,15 +77,54 @@ adminRouter.post('/course', adminMiddleware,async (req,res) =>{
         courseId: course._id.toString()
     });
 });
-adminRouter.put('/course', (req,res) =>{
-    res.json({
-        message: 'signup endpoint'
-    });
+adminRouter.put('/course', adminMiddleware, (req,res) =>{
+    const adminId = req.userId;
+    const { title, description, imageUrl, price } = req.body;
+
+    courseModel.updateOne({
+        _id: req.body.courseId
+    }, {
+        $set: {
+            title: title,
+            description: description,
+            imageUrl: imageUrl,
+            price: price
+        }
+    }).then((result) => {
+        res.json({
+            message: 'Course Updated Successfully!',
+            data: result
+        })
+    }).catch((err) => {
+        res.status(500).json({
+            message: 'Error updating course',
+            error: err
+        })
+    })
+   
 });
-adminRouter.get('/course/bulk', (req,res) =>{
-    res.json({
-        message: 'signup endpoint'
-    });
+adminRouter.get('/course/bulk', async (req,res) =>{
+    const adminId = req.query.adminId;
+
+    if (!adminId) {
+        return res.status(400).json({
+            message: 'Admin ID is required'
+        });
+    }
+
+    try {
+        const courses = await courseModel.find({ creatorId: adminId });
+
+        res.json({
+            message: 'Courses fetched successfully!',
+            data: courses
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: 'Error fetching courses',
+            error: err
+        });
+    }
 });
 
 
