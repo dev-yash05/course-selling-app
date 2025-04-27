@@ -49,6 +49,7 @@ userRouter.post('/signin', async (req,res) =>{
         }, JWT_USER_PASSWORD);
 
         res.json({
+            message: "Signed in Sussessfully!",         
             token
         })
     } else {
