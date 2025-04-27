@@ -58,11 +58,28 @@ userRouter.post('/signin', async (req,res) =>{
         })
     }
 });
-userRouter.get('/purchases', (req,res) =>{
-    res.json({
-        message: 'signup endpoint'
+userRouter.get("/purchases", userMiddleware, async function(req, res) {
+    const userId = req.userId;
+
+    const purchases = await purchaseModel.find({
+        userId,
     });
-});
+
+    let purchasedCourseIds = [];
+
+    for (let i = 0; i<purchases.length;i++){ 
+        purchasedCourseIds.push(purchases[i].courseId)
+    }
+
+    const coursesData = await courseModel.find({
+        _id: { $in: purchasedCourseIds }//we can use purchases.map(p => p.courseId) as well
+    })
+
+    res.json({
+        purchases,
+        coursesData
+    })
+})
 
 
 module.exports = {
