@@ -77,31 +77,50 @@ adminRouter.post('/course', adminMiddleware ,async (req,res) =>{
         courseId: course._id.toString()
     });
 });
-adminRouter.put('/course', adminMiddleware, (req,res) =>{
-    const adminId = req.userId;
-    const { title, description, imageUrl, price } = req.body;
+adminRouter.put('/course', adminMiddleware, async (req, res) => {
+    const adminId = req.userId; // Logged-in admin's ID
+    const { courseId, title, description, imageUrl, price } = req.body;
 
-    courseModel.updateOne({
-        _id: req.body.courseId
-    }, {
-        $set: {
-            title: title,
-            description: description,
-            imageUrl: imageUrl,
-            price: price
+    try {
+        // Find the course to ensure it belongs to the logged-in admin
+        const course = await courseModel.findOne({ _id: courseId });
+
+        if (!course) {
+            return res.status(404).json({
+                message: 'Course not found'
+            });
         }
-    }).then((result) => {
+
+        // Check if the logged-in admin is the creator of the course
+        if (course.creatorId.toString() !== adminId) {
+            return res.status(403).json({
+                message: 'You are not authorized to update this course'
+            });
+        }
+
+        // Update the course
+        const result = await courseModel.updateOne(
+            { _id: courseId },
+            {
+                $set: {
+                    title: title,
+                    description: description,
+                    imageUrl: imageUrl,
+                    price: price
+                }
+            }
+        );
+
         res.json({
             message: 'Course Updated Successfully!',
             data: result
-        })
-    }).catch((err) => {
+        });
+    } catch (err) {
         res.status(500).json({
             message: 'Error updating course',
             error: err
-        })
-    })
-   
+        });
+    }
 });
 adminRouter.get('/course/bulk', async (req,res) =>{
     const adminId = req.query.adminId;
